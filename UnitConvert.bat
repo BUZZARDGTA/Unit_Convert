@@ -424,8 +424,8 @@ if defined WT_SESSION (
 )
 :SKIP_WINDOWS_TERMINAL
 if defined WINDOWS_TERMINAL (
-    tasklist /v /fo csv /fi "imagename eq WindowsTerminal.exe" | >nul find "WindowsTerminal.exe" && (
-        tasklist /v /fo csv /fi "imagename eq OpenConsole.exe" | >nul find "OpenConsole.exe" || (
+    tasklist /fo csv /fi "imagename eq WindowsTerminal.exe" | >nul find "WindowsTerminal.exe" && (
+        tasklist /fo csv /fi "imagename eq OpenConsole.exe" | >nul find "OpenConsole.exe" || (
             set WINDOWS_TERMINAL=
         )
     ) || (
