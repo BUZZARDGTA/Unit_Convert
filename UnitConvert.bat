@@ -157,72 +157,78 @@ if defined PID (
 call :TITLE_ADD_PERCENTAGE
 :: attrib.exe:A  SHR OI  X PU
 :: %%~a      :drahscotl-x
-for /f "delims=" %%A in ('attrib "!FilePath!"') do (
-    set "Attributes=!Attributes!%%A"
+for /f "delims=" %%A in ('2^>nul attrib "!FilePath!"') do (
+    set "_Attributes=%%A"
 )
-for /f "tokens=1*delims=:" %%A in ("!Attributes!") do (
+for /f "tokens=1*delims=:" %%A in ("$!_Attributes!") do (
     if not "%%B"=="" (
-        set "Attributes=%%A"
-        set "Attributes=!Attributes:~0,-1!"
+        set "_Attributes=%%A"
+        set "_Attributes=!_Attributes:~1,-1!"
+        if defined _Attributes (
+            set "Attributes=!Attributes!!_Attributes!"
+        )
     )
-)
-for %%A in (-," ") do (
-    if defined Attributes (
-        set "Attributes=!Attributes:%%~A=!"
+    if defined _Attributes (
+        set _Attributes=
     )
 )
 if defined Attributes (
-    <nul set /p=.!\B!!sp![Attribute^(s^)  ]  ^>
-    for /f "delims==" %%A in ('2^>nul set attribute_[') do (
-        set %%A=
+    for %%A in (-," ") do (
+        if defined Attributes (
+            set "Attributes=!Attributes:%%~A=!"
+        )
     )
-    set attribute_[A]=A`Archive`^(The file or directory is marked to be included in incremental backup or removal operation.^)
-    set attribute_[B]=B`SMR Blob`^(Unfortunately, UnitConvert could not find a description for 'SMR Blob'.^)
-    set attribute_[C]=C`Compressed`^(The file is compressed.^)
-    set attribute_[D]=D`Directory`^(The file is a directory.^)
-    set attribute_[E]=E`Encrypted`^(The file or directory is encrypted.^)
-    set attribute_[H]=H`Hidden`^(The file is hidden, and is not included in an ordinary directory listing.^)
-    set attribute_[I]=I`Not Content-Indexed`^(The file or directory is not to be indexed by the content indexing service.^)
-    set attribute_[L]=L`Reparse Point`^(The file or directory has an associated re-parse point, or is a symbolic link.^)
-    set attribute_[N]=N`Not Indexed`^(The file is not indexed on the host device.^)
-    set attribute_[O]=O`Offline`^(The file data is physically moved to offline storage ^(Remote Storage^).^)
-    set attribute_[P]=P`Sparse`^(The file is a sparse file.^)
-    set attribute_[Q]=Q`Sparse File`^(Unfortunately, UnitConvert could not find a description for 'Sparse File'.^)
-    set attribute_[R]=R`Read-only`^(The file is read-only.^)
-    set attribute_[S]=S`System`^(The file or directory is a system file.^)
-    set attribute_[T]=T`Temporary`^(The file is used for temporary storage.^)
-    set attribute_[U]=U`Unpinned`^(Unfortunately, UnitConvert could not find a description for 'Unpinned'.^)
-    set attribute_[V]=V`Integrity`^(The directory or user data stream is configured with integrity ^(only supported on ReFS volumes^).^)
-    set attribute_[X]=X`No scrub file`^(The user data stream not to be read by the background data integrity scanner ^(AKA scrubber^). When set on a directory it only provides inheritance.^)
-    set attribute_[Z]=Z`Alternate Data Streams`^(Unfortunately, UnitConvert could not find a description for 'Alternate Data Streams'.^)
-    set counter=0
-    for /f %%A in ('set attribute_[') do (
-        set /a counter+=1
-    )
-    set first=1
-    for /l %%A in (0,1,!counter!) do (
-        for %%B in ("!Attributes:~%%A,1!") do (
-            if defined attribute_[%%~B] (
-                if not defined counts_[%%~B] (
-                    set counts_[%%~B]=1
-                    for /f "tokens=1-3delims=`" %%C in ("!attribute_[%%~B]!") do (
-                        if defined first (
-                            set first=
-                            echo   %%C [%%D] %%E
-                        ) else (
-                            echo !sp!                  ^>  %%C [%%D] %%E
+    if defined Attributes (
+        <nul set /p=.!\B!!sp![Attribute^(s^)  ]  ^>
+        for /f "delims==" %%A in ('2^>nul set attribute_[') do (
+            set %%A=
+        )
+        set attribute_[A]=A`Archive`^(The file or directory is marked to be included in incremental backup or removal operation.^)
+        set attribute_[B]=B`SMR Blob`^(Unfortunately, UnitConvert could not find a description for 'SMR Blob'.^)
+        set attribute_[C]=C`Compressed`^(The file is compressed.^)
+        set attribute_[D]=D`Directory`^(The file is a directory.^)
+        set attribute_[E]=E`Encrypted`^(The file or directory is encrypted.^)
+        set attribute_[H]=H`Hidden`^(The file is hidden, and is not included in an ordinary directory listing.^)
+        set attribute_[I]=I`Not Content-Indexed`^(The file or directory is not to be indexed by the content indexing service.^)
+        set attribute_[L]=L`Reparse Point`^(The file or directory has an associated re-parse point, or is a symbolic link.^)
+        set attribute_[N]=N`Not Indexed`^(The file is not indexed on the host device.^)
+        set attribute_[O]=O`Offline`^(The file data is physically moved to offline storage ^(Remote Storage^).^)
+        set attribute_[P]=P`Sparse`^(The file is a sparse file.^)
+        set attribute_[Q]=Q`Sparse File`^(Unfortunately, UnitConvert could not find a description for 'Sparse File'.^)
+        set attribute_[R]=R`Read-only`^(The file is read-only.^)
+        set attribute_[S]=S`System`^(The file or directory is a system file.^)
+        set attribute_[T]=T`Temporary`^(The file is used for temporary storage.^)
+        set attribute_[U]=U`Unpinned`^(Unfortunately, UnitConvert could not find a description for 'Unpinned'.^)
+        set attribute_[V]=V`Integrity`^(The directory or user data stream is configured with integrity ^(only supported on ReFS volumes^).^)
+        set attribute_[X]=X`No scrub file`^(The user data stream not to be read by the background data integrity scanner ^(AKA scrubber^). When set on a directory it only provides inheritance.^)
+        set attribute_[Z]=Z`Alternate Data Streams`^(Unfortunately, UnitConvert could not find a description for 'Alternate Data Streams'.^)
+        set counter=0
+        for /f %%A in ('set attribute_[') do (
+            set /a counter+=1
+        )
+        set first=1
+        for /l %%A in (0,1,!counter!) do (
+            for %%B in ("!Attributes:~%%A,1!") do (
+                if defined attribute_[%%~B] (
+                    if not defined counts_[%%~B] (
+                        set counts_[%%~B]=1
+                        for /f "tokens=1-3delims=`" %%C in ("!attribute_[%%~B]!") do (
+                            if defined first (
+                                set first=
+                                echo   %%C [%%D] %%E
+                            ) else (
+                                echo !sp!                  ^>  %%C [%%D] %%E
+                            )
+                            set attribute_[%%C]=
                         )
-                        set attribute_[%%C]=
                     )
                 )
             )
         )
+        for /f "delims==" %%A in ('2^>nul set attribute_[') do (
+            set %%A=
+        )
     )
-    for /f "delims==" %%A in ('2^>nul set attribute_[') do (
-        set %%A=
-    )
-) else (
-    echo !sp![Attribute     ]  ^>
 )
 call :WMIC CreationDate "Date Created  " D
 call :WMIC LastAccessed "Date Acceeded " D
@@ -352,7 +358,9 @@ exit /b
 if not defined powershell (
     exit /b
 )
-for /f "tokens=2*" %%A in ('powershell Get-ItemProperty -Path "!FilePath!" ^^^^^| Format-list -Property VersionInfo -Force ^| findstr /ic:"%1:"') do (
+for /f "tokens=2*" %%A in (
+    '^>nul chcp 437^& 2^>nul powershell Get-ItemProperty -Path "'!FilePath!'" ^^^^^| Format-list -Property VersionInfo -Force ^| find "%1:"^& ^>nul chcp 65001'
+) do (
     set %1=%%A %%B
 )
 if defined %1 (
