@@ -42,6 +42,14 @@ cls
 if not defined WINDOWS_TERMINAL (
     mode 170,50
 )
+>nul 2>&1 powershell /?
+if !errorlevel!==0 (
+    set powershell=1
+) else (
+    if defined powershell (
+        set powershell=
+    )
+)
 
 :: -------------------ARGUMENTS-------------------
 set files=0
@@ -67,11 +75,11 @@ if !files! gtr 1 (
 )
 set "sp=                   "
 for %%A in ("!files_[1]!") do (
-    set File=%%~nxA
-    set FileExtension=%%~xA
-    set FilePath=%%~fA
-    set FileSize=%%~zA
-    set Attributes=%%~aA
+    set "File=%%~nxA"
+    set "FileExtension=%%~xA"
+    set "FilePath=%%~fA"
+    set "FileSize=%%~zA"
+    set "Attributes=%%~aA"
 )
 if "!File!"=="" (
     set error=ERROR: Missing arguments.
@@ -117,11 +125,11 @@ if "!OS!"=="Windows_NT" (
 )
 if exist "!FilePath!\!NUL!" (
     if defined R (
-        for /f "delims=" %%A in ('dir "!FilePath!" /a:-d /b /s') do (
+        for /f "delims=" %%A in ('2^>nul dir "!FilePath!" /a:-d /b /s') do (
             start "" cmd /c ""%~f0" "%%~A""
         )
     ) else (
-        for /f "delims=" %%A in ('dir "!FilePath!" /a:-d /b') do (
+        for /f "delims=" %%A in ('2^>nul dir "!FilePath!" /a:-d /b') do (
             start "" cmd /c ""%~f0" "!FilePath!\%%~A""
         )
     )
@@ -132,19 +140,19 @@ echo File information:  [Name          ]  ^>  !File!
 call :TITLE_ADD_PERCENTAGE
 echo !sp![Path          ]  ^>  !FilePath!
 call :TITLE_ADD_PERCENTAGE
-tasklist /fo csv /fi "imagename eq !File!" | >nul findstr /c:"!File!" && (
+if defined PID (
+    set PID=
+)
+for /f %%A in ('2^>nul WMIC PROCESS where "Name='!File!'" get ProcessID ^| findstr /brc:"[0-9]"') do (
+    set "PID=!PID!%%A,"
+)
+if defined PID (
+    if "!PID:~-1!"=="," (
+        set "PID=!PID:~0,-1!"
+    )
     if defined PID (
-        set PID=
+        echo !sp![PID           ]  ^>  !PID!
     )
-    for /f %%A in ('2^>nul WMIC PROCESS where "Name='!File!'" get ProcessID ^| findstr /brc:"[0-9]"') do (
-        set "PID=!PID!%%A,"
-    )
-    if defined PID (
-        if "!PID:~-1!"=="," (
-            set "PID=!PID:~0,-1!"
-        )
-    )
-    echo !sp![PID           ]  ^>  !PID!
 )
 call :TITLE_ADD_PERCENTAGE
 :: attrib.exe:A  SHR OI  X PU
@@ -152,11 +160,11 @@ call :TITLE_ADD_PERCENTAGE
 for /f "delims=" %%A in ('attrib "!FilePath!"') do (
     set "Attributes=!Attributes!%%A"
 )
-for /f "delims=:" %%A in ("!Attributes!") do (
-    set "Attributes=%%A"
-)
-if defined Attributes (
-    set "Attributes=!Attributes:~0,-1!"
+for /f "tokens=1*delims=:" %%A in ("!Attributes!") do (
+    if not "%%B"=="" (
+        set "Attributes=%%A"
+        set "Attributes=!Attributes:~0,-1!"
+    )
 )
 for %%A in (-," ") do (
     if defined Attributes (
@@ -219,22 +227,17 @@ if defined Attributes (
 call :WMIC CreationDate "Date Created  " D
 call :WMIC LastAccessed "Date Acceeded " D
 call :WMIC LastModified "Date Modified " D
-for /f "tokens=3*" %%A in ('dir "!FilePath!" /a-d /q ^| findstr /c:"!File!"') do (
-    set "owner=%%B"
-    set "owner=!owner:~0,23!"
-    goto :EARLY_EXIT_GET_OWNER
+for /f "tokens=3*" %%A in ('2^>nul dir "!FilePath!" /a-d /q ^| find /i "!File!"') do (
+    if not "%%B"=="" (
+        set "owner=%%B"
+        set "owner=!owner:~0,23!"
+        goto :EARLY_EXIT_GET_OWNER
+    )
 )
 :EARLY_EXIT_GET_OWNER
 echo !sp![Owner         ]  ^>  !owner!
 call :TITLE_ADD_PERCENTAGE
 if "!FileExtension!"==".exe" (
-    >nul 2>&1 powershell /? && (
-        set powershell=1
-    ) || (
-        if defined powershell (
-            set powershell=
-        )
-    )
     call :POWERSHELL InternalName "InternalName  "
     call :POWERSHELL OriginalFilename "OriginalName  "
     call :WMIC Manufacturer "Manufacturer  " s
@@ -424,8 +427,8 @@ if defined WT_SESSION (
 )
 :SKIP_WINDOWS_TERMINAL
 if defined WINDOWS_TERMINAL (
-    tasklist /fo csv /fi "imagename eq WindowsTerminal.exe" | >nul find "WindowsTerminal.exe" && (
-        tasklist /fo csv /fi "imagename eq OpenConsole.exe" | >nul find "OpenConsole.exe" || (
+    2>nul tasklist /nh /fo csv /fi "imagename eq WindowsTerminal.exe" | >nul find /i """WindowsTerminal.exe""" && (
+        2>nul tasklist /nh /fo csv /fi "imagename eq OpenConsole.exe" | >nul find /i """OpenConsole.exe""" || (
             set WINDOWS_TERMINAL=
         )
     ) || (
@@ -439,9 +442,11 @@ curl -fkLs "https://tim-greller.de/git/number/Number.cmd" -o "Number.cmd"
 call :CHECK_DOWNLOAD_NUMBER_CMD && (
     exit /b 0
 )
->nul chcp 437
-powershell Invoke-WebRequest -Uri "'https://tim-greller.de/git/number/Number.cmd'" -OutFile "'Number.cmd'"
->nul chcp 65001
+if defined powershell (
+    >nul chcp 437
+    powershell Invoke-WebRequest -Uri "'https://tim-greller.de/git/number/Number.cmd'" -OutFile "'Number.cmd'"
+    >nul chcp 65001
+)
 call :CHECK_DOWNLOAD_NUMBER_CMD && (
     exit /b 0
 )
